@@ -42,13 +42,14 @@ const MediaDetail = () => {
 
   const dispatch = useDispatch();
 
-  const videoRef = useRef(null);
-
   useEffect(() => {
     window.scrollTo(0, 0);
     const getMedia = async () => {
       dispatch(setGlobalLoading(true));
-      const { response, err } = await mediaApi.getDetail({ mediaType, mediaId });
+      const { response, err } = await mediaApi.getDetail({
+        mediaType,
+        mediaId,
+      });
       dispatch(setGlobalLoading(false));
 
       if (response) {
@@ -80,7 +81,7 @@ const MediaDetail = () => {
       mediaTitle: media.title || media.name,
       mediaType: mediaType,
       mediaPoster: media.poster_path,
-      mediaRate: media.vote_average
+      mediaRate: media.vote_average,
     };
 
     const { response, err } = await favoriteApi.add(body);
@@ -99,9 +100,13 @@ const MediaDetail = () => {
     if (onRequest) return;
     setOnRequest(true);
 
-    const favorite = listFavorites.find(e => e.mediaId.toString() === media.id.toString());
+    const favorite = listFavorites.find(
+      (e) => e.mediaId.toString() === media.id.toString()
+    );
 
-    const { response, err } = await favoriteApi.remove({ favoriteId: favorite.id });
+    const { response, err } = await favoriteApi.remove({
+      favoriteId: favorite.id,
+    });
 
     setOnRequest(false);
 
@@ -113,162 +118,303 @@ const MediaDetail = () => {
     }
   };
 
-  return (
-    media ? (
-      <>
-        <ImageHeader imgPath={tmdbConfigs.backdropPath(media.backdrop_path || media.poster_path)} />
-        <Box sx={{
+  console.log("media", media, mediaType);
+
+  const [seasonNumber, setSeasonNumber] = useState(1);
+  const [episodeNumber, setEpisodeNumber] = useState(1);
+ const [selectedSeason, setSelectedSeason] = useState(1);
+
+  const handleSeasonChange = (event) => {
+    setSelectedSeason(parseInt(event.target.value)); // Parse the selected value to an integer
+  };
+  
+
+  const topbarHeight = 100; // Adjust this value according to your actual topbar height
+  const videoRef = useRef(null);
+
+  const scrollToVideo = () => {
+    const videoTop =
+      videoRef.current.getBoundingClientRect().top + window.pageYOffset;
+    window.scrollTo({ top: videoTop - topbarHeight, behavior: "smooth" });
+  };
+
+  return media ? (
+    <>
+      <ImageHeader
+        imgPath={tmdbConfigs.backdropPath(
+          media.backdrop_path || media.poster_path
+        )}
+      />
+      <Box
+        sx={{
           color: "primary.contrastText",
-          ...uiConfigs.style.mainContent
-        }}>
-          {/* media content */}
-          <Box sx={{
-            marginTop: { xs: "-10rem", md: "-15rem", lg: "-20rem" }
-          }}>
-            <Box sx={{
+          ...uiConfigs.style.mainContent,
+        }}
+      >
+        {/* media content */}
+        <Box
+          sx={{
+            marginTop: { xs: "-10rem", md: "-15rem", lg: "-20rem" },
+          }}
+        >
+          <Box
+            sx={{
               display: "flex",
-              flexDirection: { md: "row", xs: "column" }
-            }}>
-              {/* poster */}
-              <Box sx={{
+              flexDirection: { md: "row", xs: "column" },
+            }}
+          >
+            {/* poster */}
+            <Box
+              sx={{
                 width: { xs: "70%", sm: "50%", md: "40%" },
-                margin: { xs: "0 auto 2rem", md: "0 2rem 0 0" }
-              }}>
-                <Box sx={{
+                margin: { xs: "0 auto 2rem", md: "0 2rem 0 0" },
+              }}
+            >
+              <Box
+                sx={{
                   paddingTop: "140%",
-                  ...uiConfigs.style.backgroundImage(tmdbConfigs.posterPath(media.poster_path || media.backdrop_path))
-                }} />
-              </Box>
-              {/* poster */}
-
-              {/* media info */}
-              <Box sx={{
-                width: { xs: "100%", md: "60%" },
-                color: "text.primary"
-              }}>
-                <Stack spacing={5}>
-                  {/* title */}
-                  <Typography
-                    variant="h4"
-                    fontSize={{ xs: "2rem", md: "2rem", lg: "4rem" }}
-                    fontWeight="700"
-                    sx={{ ...uiConfigs.style.typoLines(2, "left") }}
-                  >
-                    {`${media.title || media.name} ${mediaType === tmdbConfigs.mediaType.movie ? media.release_date.split("-")[0] : media.first_air_date.split("-")[0]}`}
-                  </Typography>
-                  {/* title */}
-
-                  {/* rate and genres */}
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    {/* rate */}
-                    <CircularRate value={media.vote_average} />
-                    {/* rate */}
-                    <Divider orientation="vertical" />
-                    {/* genres */}
-                    {genres.map((genre, index) => (
-                      <Chip
-                        label={genre.name}
-                        variant="filled"
-                        color="primary"
-                        key={index}
-                      />
-                    ))}
-                    {/* genres */}
-                  </Stack>
-                  {/* rate and genres */}
-
-                  {/* overview */}
-                  <Typography
-                    variant="body1"
-                    sx={{ ...uiConfigs.style.typoLines(5) }}
-                  >
-                    {media.overview}
-                  </Typography>
-                  {/* overview */}
-
-                  {/* buttons */}
-                  <Stack direction="row" spacing={1}>
-                    <LoadingButton
-                      variant="text"
-                      sx={{
-                        width: "max-content",
-                        "& .MuiButon-starIcon": { marginRight: "0" }
-                      }}
-                      size="large"
-                      startIcon={isFavorite ? <FavoriteIcon /> : <FavoriteBorderOutlinedIcon />}
-                      loadingPosition="start"
-                      loading={onRequest}
-                      onClick={onFavoriteClick}
-                    />
-                    <Button
-                      variant="contained"
-                      sx={{ width: "max-content" }}
-                      size="large"
-                      startIcon={<PlayArrowIcon />}
-                      onClick={() => videoRef.current.scrollIntoView()}
-                    >
-                      watch now
-                    </Button>
-                  </Stack>
-                  {/* buttons */}
-
-                  {/* cast */}
-                  <Container header="Cast">
-                    <CastSlide casts={media.credits.cast} />
-                  </Container>
-                  {/* cast */}
-                </Stack>
-              </Box>
-              {/* media info */}
-            </Box>
-          </Box>
-          {/* media content */}
-
-          {/* media videos */}
-          <div ref={videoRef} style={{ paddingTop: "2rem" }}>
-            <Container header="Videos">
-              <MediaVideosSlide videos={[...media.videos.results].splice(0, 5)} />
-            </Container>
-          </div>
-          {/* media videos */}
-
-          {/* media backdrop */}
-          {media.images.backdrops.length > 0 && (
-            <Container header="backdrops">
-              <BackdropSlide backdrops={media.images.backdrops} />
-            </Container>
-          )}
-          {/* media backdrop */}
-
-          {/* media posters */}
-          {media.images.posters.length > 0 && (
-            <Container header="posters">
-              <PosterSlide posters={media.images.posters} />
-            </Container>
-          )}
-          {/* media posters */}
-
-          {/* media reviews */}
-          <MediaReview reviews={media.reviews} media={media} mediaType={mediaType} />
-          {/* media reviews */}
-
-          {/* media recommendation */}
-          <Container header="you may also like">
-            {media.recommend.length > 0 && (
-              <RecommendSlide medias={media.recommend} mediaType={mediaType} />
-            )}
-            {media.recommend.length === 0 && (
-              <MediaSlide
-                mediaType={mediaType}
-                mediaCategory={tmdbConfigs.mediaCategory.top_rated}
+                  ...uiConfigs.style.backgroundImage(
+                    tmdbConfigs.posterPath(
+                      media.poster_path || media.backdrop_path
+                    )
+                  ),
+                }}
               />
-            )}
-          </Container>
-          {/* media recommendation */}
+            </Box>
+            {/* poster */}
+
+            {/* media info */}
+            <Box
+              sx={{
+                width: { xs: "100%", md: "60%" },
+                color: "text.primary",
+              }}
+            >
+              <Stack spacing={5}>
+                {/* title */}
+                <Typography
+                  variant="h4"
+                  fontSize={{ xs: "2rem", md: "2rem", lg: "4rem" }}
+                  fontWeight="700"
+                  sx={{ ...uiConfigs.style.typoLines(2, "left") }}
+                >
+                  {`${media.title || media.name} ${
+                    mediaType === tmdbConfigs.mediaType.movie
+                      ? media.release_date.split("-")[0]
+                      : media.first_air_date.split("-")[0]
+                  }`}
+                </Typography>
+                {/* title */}
+
+                {/* rate and genres */}
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {/* rate */}
+                  <CircularRate value={media.vote_average} />
+                  {/* rate */}
+                  <Divider orientation="vertical" />
+                  {/* genres */}
+                  {genres.map((genre, index) => (
+                    <Chip
+                      label={genre.name}
+                      variant="filled"
+                      color="primary"
+                      key={index}
+                    />
+                  ))}
+                  {/* genres */}
+                </Stack>
+                {/* rate and genres */}
+
+                {/* overview */}
+                <Typography
+                  variant="body1"
+                  sx={{ ...uiConfigs.style.typoLines(5) }}
+                >
+                  {media.overview}
+                </Typography>
+                {/* overview */}
+
+                {/* buttons */}
+                <Stack direction="row" spacing={1}>
+                  <LoadingButton
+                    variant="text"
+                    sx={{
+                      width: "max-content",
+                      "& .MuiButon-starIcon": { marginRight: "0" },
+                    }}
+                    size="large"
+                    startIcon={
+                      isFavorite ? (
+                        <FavoriteIcon />
+                      ) : (
+                        <FavoriteBorderOutlinedIcon />
+                      )
+                    }
+                    loadingPosition="start"
+                    loading={onRequest}
+                    onClick={onFavoriteClick}
+                  />
+                  <Button
+                    variant="contained"
+                    sx={{ width: "max-content", marginTop: 2 }} // Add some margin to separate button from the content
+                    size="large"
+                    startIcon={<PlayArrowIcon />}
+                    onClick={scrollToVideo}
+                  >
+                    watch now
+                  </Button>
+                </Stack>
+                {/* buttons */}
+
+                {/* cast */}
+                <Container header="Cast">
+                  <CastSlide casts={media.credits.cast} />
+                </Container>
+                {/* cast */}
+              </Stack>
+            </Box>
+            {/* media info */}
+          </Box>
         </Box>
-      </>
-    ) : null
-  );
+        {/* media content */}
+
+        {/* watch */}
+        <Container header="Streaming">
+          {mediaType === tmdbConfigs.mediaType.movie ? (
+            <>
+              <iframe
+                ref={videoRef}
+                style={{
+                  margin: "50px auto",
+                  aspectRatio: "16/10",
+                  width: "85%",
+                }}
+                src={`https://embed.smashystream.com/playere.php?tmdb=${media.id}`}
+                allowFullScreen
+              ></iframe>
+              <p>If the video didn't work, please change to another server</p>
+            </>
+          ) : (
+            <>
+              <div>
+                <iframe
+                  ref={videoRef}
+                  style={{
+                    margin: "50px auto",
+                    aspectRatio: "16/10",
+                    width: "85%",
+                  }}
+                  src={`https://embed.smashystream.com/playere.php?tmdb=${media.id}&season=${seasonNumber}&episode=${episodeNumber}`}
+                  allowFullScreen
+                ></iframe>
+                <p>If the video didn't work, please change to another server</p>
+              </div>
+              {/* Buttons for each season */}
+              <div>
+                <select
+                  style={{
+                    width: "50%",
+                    color: "white",
+                    backgroundColor: "#3b3b3b",
+                    border: "none",
+                    height: "50px",
+                    fontSize: "20px",
+                    margin: "0 0 15px 0",
+                    padding: "0 10px 0 10px",
+                  }}
+                  value={selectedSeason}
+                  onChange={handleSeasonChange}
+                >
+                  {media.seasons.map((season) => (
+                    <option key={season.id} value={season.season_number}>
+                      Season {season.season_number}
+                    </option>
+                  ))}
+                </select>
+                {media.seasons.map((season) =>
+                  season.season_number === selectedSeason ? (
+                    <div key={season.id}>
+                      {Array.from(
+                        { length: season.episode_count },
+                        (_, index) => (
+                          <button
+                            style={{
+                              width: "40px",
+                              height: "30px",
+                              backgroundColor: "#0096ff",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "5px",
+                              margin: "5px",
+                            }}
+                            key={index + 1}
+                            onClick={() => {
+                              setSeasonNumber(season.season_number);
+                              setEpisodeNumber(index + 1);
+                            }}
+                          >
+                            {index + 1}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  ) : null
+                )}
+              </div>
+              {/* Buttons for each season */}
+            </>
+          )}
+        </Container>
+        {/* watch */}
+
+        {/* media videos */}
+        <div style={{ paddingTop: "2rem" }}>
+          <Container header="Videos">
+            <MediaVideosSlide videos={[...media.videos.results].splice(0, 5)} />
+          </Container>
+        </div>
+        {/* media videos */}
+
+        {/* media backdrop */}
+        {media.images.backdrops.length > 0 && (
+          <Container header="backdrops">
+            <BackdropSlide backdrops={media.images.backdrops} />
+          </Container>
+        )}
+        {/* media backdrop */}
+
+        {/* media posters */}
+        {media.images.posters.length > 0 && (
+          <Container header="posters">
+            <PosterSlide posters={media.images.posters} />
+          </Container>
+        )}
+        {/* media posters */}
+
+        {/* media reviews */}
+        <MediaReview
+          reviews={media.reviews}
+          media={media}
+          mediaType={mediaType}
+        />
+        {/* media reviews */}
+
+        {/* media recommendation */}
+        <Container header="you may also like">
+          {media.recommend.length > 0 && (
+            <RecommendSlide medias={media.recommend} mediaType={mediaType} />
+          )}
+          {media.recommend.length === 0 && (
+            <MediaSlide
+              mediaType={mediaType}
+              mediaCategory={tmdbConfigs.mediaCategory.top_rated}
+            />
+          )}
+        </Container>
+        {/* media recommendation */}
+      </Box>
+    </>
+  ) : null;
 };
 
 export default MediaDetail;
