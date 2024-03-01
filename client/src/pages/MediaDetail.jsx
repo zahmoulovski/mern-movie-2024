@@ -122,13 +122,11 @@ const MediaDetail = () => {
 
   const [seasonNumber, setSeasonNumber] = useState(1);
   const [episodeNumber, setEpisodeNumber] = useState(1);
- const [selectedSeason, setSelectedSeason] = useState(1);
+  const [selectedSeason, setSelectedSeason] = useState(1);
 
   const handleSeasonChange = (event) => {
     setSelectedSeason(parseInt(event.target.value)); // Parse the selected value to an integer
   };
-  
-
   const topbarHeight = 100; // Adjust this value according to your actual topbar height
   const videoRef = useRef(null);
 
@@ -137,6 +135,46 @@ const MediaDetail = () => {
       videoRef.current.getBoundingClientRect().top + window.pageYOffset;
     window.scrollTo({ top: videoTop - topbarHeight, behavior: "smooth" });
   };
+
+  // Function to check if an iframe contains an ad
+  function isAdFrame(iframe) {
+    // Add conditions to identify ads based on iframe properties or content
+    // For example, you might check the source URL, dimensions, or keywords in the content
+    // This is a simplified example and may need to be adapted based on specific requirements
+    if (
+      iframe.src.includes("adserver.com") ||
+      iframe.width > 500 ||
+      iframe.height > 600
+    ) {
+      return true; // Consider it an ad
+    }
+    return false; // Not an ad
+  }
+
+  // Function to remove ad iframes from the page
+  function removeAdFrames() {
+    // Get all iframes on the page
+    var iframes = document.getElementsByTagName("iframe");
+
+    // Iterate through each iframe
+    for (var i = 0; i < iframes.length; i++) {
+      // Check if the iframe is an ad
+      if (isAdFrame(iframes[i])) {
+        // Remove the iframe from the DOM
+        iframes[i].parentNode.removeChild(iframes[i]);
+      }
+    }
+  }
+
+  // Call the function to remove ad iframes when the page loads
+  window.onload = removeAdFrames;
+
+  const [iframeSrc, setIframeSrc] = useState("");
+
+  const handleSrcChange = (newSrc) => {
+    setIframeSrc(newSrc);
+  };
+
 
   return media ? (
     <>
@@ -286,13 +324,43 @@ const MediaDetail = () => {
                 ref={videoRef}
                 style={{
                   margin: "50px auto",
-                  aspectRatio: "16/10",
-                  width: "85%",
+                  aspectRatio: "16/7",
+                  width: "75%",
+                  display: "block",
                 }}
-                src={`https://embed.smashystream.com/playere.php?tmdb=${media.id}`}
+                // src={`https://multiembed.mov/?video_id=${media.id}&tmdb=1`}
+                src={iframeSrc}
                 allowFullScreen
+                allowScripts
               ></iframe>
               <p>If the video didn't work, please change to another server</p>
+              <div>
+                <button
+                  onClick={() =>
+                    handleSrcChange(
+                      `https://vidsrc.xyz/embed/movie?tmdb=${media.id}`
+                    )
+                  }
+                >
+                  Server : 1
+                </button>
+                <button
+                  onClick={() =>
+                    handleSrcChange(
+                      `https://multiembed.mov/?video_id=${media.id}&tmdb=1`
+                    )
+                  }
+                >
+                  Server : 2
+                </button>
+                <button
+                  onClick={() =>
+                    handleSrcChange(`https://vidsrc.to/embed/movie/${media.id}`)
+                  }
+                >
+                  Server : 3
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -301,13 +369,41 @@ const MediaDetail = () => {
                   ref={videoRef}
                   style={{
                     margin: "50px auto",
-                    aspectRatio: "16/10",
-                    width: "85%",
+                    aspectRatio: "16/7",
+                    width: "75%",
+                    display: "block",
                   }}
-                  src={`https://embed.smashystream.com/playere.php?tmdb=${media.id}&season=${seasonNumber}&episode=${episodeNumber}`}
+                  src={iframeSrc}
                   allowFullScreen
+                  allowScripts
                 ></iframe>
-                <p>If the video didn't work, please change to another server</p>
+                <div>
+                  <button
+                    onClick={() =>
+                      handleSrcChange(
+                        `https://vidsrc.xyz/embed/tv?tmdb=${media.id}`
+                      )
+                    }
+                  >
+                    Server : 1
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSrcChange(
+                        `https://multiembed.mov/?video_id=${media.id}&tmdb=1&s=${seasonNumber}&e=${episodeNumber}`
+                      )
+                    }
+                  >
+                    Server : 2
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSrcChange(`https://vidsrc.to/embed/tv/${media.id}`)
+                    }
+                  >
+                    Server : 3
+                  </button>
+                </div>
               </div>
               {/* Buttons for each season */}
               <div>
